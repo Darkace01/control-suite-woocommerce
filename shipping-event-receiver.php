@@ -3,7 +3,7 @@
  * Plugin Name: Shipping Event Receiver
  * Plugin URI: https://example.com/shipping-event-receiver
  * Description: Receives event notifications for orders from third-party shipping platforms and logs all requests
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author: Kazeem Quadri
  * Author URI: https://example.com
  * License: GPL v2 or later
@@ -57,6 +57,18 @@ class Shipping_Event_Receiver {
      * Add admin menu
      */
     public function add_admin_menu() {
+        // Add top-level menu in sidebar
+        add_menu_page(
+            'Shipping Event Receiver',
+            'Shipping Events',
+            'manage_options',
+            'shipping-event-receiver',
+            array($this, 'render_settings_page'),
+            'dashicons-upload',
+            56
+        );
+        
+        // Also add under Settings for easy access
         add_options_page(
             'Shipping Event Receiver',
             'Shipping Events',
