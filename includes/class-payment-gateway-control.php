@@ -35,7 +35,9 @@ class SER_Payment_Gateway_Control {
         
         // Check which gateways are allowed for current currency
         foreach ($settings['rules'] as $rule) {
-            if (isset($rule['currency']) && $rule['currency'] === $current_currency) {
+            $rule_currencies = isset($rule['currencies']) ? $rule['currencies'] : (isset($rule['currency']) ? array($rule['currency']) : array());
+            
+            if (in_array($current_currency, $rule_currencies)) {
                 if (isset($rule['gateways']) && is_array($rule['gateways'])) {
                     $allowed_gateways = array_merge($allowed_gateways, $rule['gateways']);
                 }

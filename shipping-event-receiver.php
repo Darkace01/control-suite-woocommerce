@@ -3,7 +3,7 @@
  * Plugin Name: Shipping Event Receiver
  * Plugin URI: https://example.com/shipping-event-receiver
  * Description: Receives event notifications for orders from third-party shipping platforms and logs all requests
- * Version: 1.0.2
+ * Version: 1.0.7
  * Author: Kazeem Quadri
  * Author URI: https://example.com
  * License: GPL v2 or later
@@ -16,32 +16,54 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// Prevent duplicate class declaration
-if (class_exists('Shipping_Event_Receiver')) {
-    return;
+// Define plugin file constant
+if (!defined('SHIPPING_EVENT_RECEIVER_FILE')) {
+    define('SHIPPING_EVENT_RECEIVER_FILE', __FILE__);
 }
+
+// Prevent duplicate class declaration
+if (!class_exists('Shipping_Event_Receiver')) {
 
 class Shipping_Event_Receiver {
     
     private $log_table = 'shipping_event_logs';
     private $option_name = 'shipping_event_receiver_settings';
+    private $plugin_file;
+    private $order_control;
+    private $payment_gateway_control;
     
     public function __construct() {
+        $this->plugin_file = SHIPPING_EVENT_RECEIVER_FILE;
+        
+        // Load dependencies
+        $this->load_dependencies();
+        
+        // Initialize sub-modules
+        $this->order_control = new SER_Order_Control();
+        $this->payment_gateway_control = new SER_Payment_Gateway_Control();
         // Register REST API endpoint
         add_action('rest_api_init', array($this, 'register_endpoint'));
         
         // Create database table on plugin activation
-        register_activation_hook(__FILE__, array($this, 'create_log_table'));
+        register_activation_hook($this->plugin_file, array($this, 'create_log_table'));
         
         // Add admin menu
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_init', array($this, 'register_settings'));
         
         // Add settings link on plugins page
-        add_filter('plugin_action_links_' . plugin_basename(__FILE__), array($this, 'add_settings_link'));
+        add_filter('plugin_action_links_' . plugin_basename($this->plugin_file), array($this, 'add_settings_link'));
         
         // Register AJAX handlers
         add_action('wp_ajax_get_log_details', array($this, 'ajax_get_log_details'));
+    }
+    
+    /**
+     * Load plugin dependencies
+     */
+    private function load_dependencies() {
+        require_once plugin_dir_path($this->plugin_file) . 'includes/class-order-control.php';
+        require_once plugin_dir_path($this->plugin_file) . 'includes/class-payment-gateway-control.php';
     }
     
     /**
@@ -68,13 +90,34 @@ class Shipping_Event_Receiver {
             56
         );
         
-        // Also add under Settings for easy access
-        add_options_page(
-            'Shipping Event Receiver',
-            'Shipping Events',
+        // Add submenu for Logs (rename the first item)
+        add_submenu_page(
+            'shipping-event-receiver',
+            'Event Logs',
+            'Event Logs',
             'manage_options',
             'shipping-event-receiver',
             array($this, 'render_settings_page')
+        );
+        
+        // Add submenu for Order Control
+        add_submenu_page(
+            'shipping-event-receiver',
+            'Order Control',
+            'Order Control',
+            'manage_options',
+            'shipping-order-control',
+            array($this, 'render_order_control_page')
+        );
+        
+        // Add submenu for Payment Gateway Control
+        add_submenu_page(
+            'shipping-event-receiver',
+            'Payment Gateway Control',
+            'Payment Gateway',
+            'manage_options',
+            'shipping-payment-gateway',
+            array($this, 'render_payment_gateway_page')
         );
     }
     
@@ -457,9 +500,267 @@ class Shipping_Event_Receiver {
      * Add settings link on plugins page
      */
     public function add_settings_link($links) {
-        $settings_link = '<a href="options-general.php?page=shipping-event-receiver">Settings</a>';
+        $settings_link = '<a href="' . admin_url('admin.php?page=shipping-event-receiver') . '">Settings</a>';
         array_unshift($links, $settings_link);
         return $links;
+    }
+    
+    /**
+     * Render Order Control page
+     */
+    public function render_order_control_page() {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+        
+        // Handle form submission
+        if (isset($_POST['ser_order_control_nonce']) && wp_verify_nonce($_POST['ser_order_control_nonce'], 'ser_order_control_save')) {
+            $settings = array(
+                'enable_orders' => isset($_POST['enable_orders']) ? true : false,
+                'enable_timeframe' => isset($_POST['enable_timeframe']) ? true : false,
+                'start_time' => sanitize_text_field($_POST['start_time']),
+                'end_time' => sanitize_text_field($_POST['end_time']),
+                'disabled_message' => sanitize_textarea_field($_POST['disabled_message'])
+            );
+            $this->order_control->update_settings($settings);
+            echo '<div class="notice notice-success"><p>Settings saved successfully!</p></div>';
+        }
+        
+        $settings = $this->order_control->get_settings();
+        $stats = $this->order_control->get_statistics();
+        
+        ?>
+        <div class="wrap">
+            <h1>Order Control Settings</h1>
+            
+            <div class="notice notice-info">
+                <p><strong>Current Status:</strong> <span style="color: <?php echo $stats['current_status'] === 'active' ? 'green' : 'red'; ?>;"><?php echo ucfirst($stats['current_status']); ?></span></p>
+            </div>
+            
+            <form method="post" action="">
+                <?php wp_nonce_field('ser_order_control_save', 'ser_order_control_nonce'); ?>
+                
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">Enable Orders</th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="enable_orders" value="1" <?php checked($settings['enable_orders'], true); ?> />
+                                Allow customers to place orders
+                            </label>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <th scope="row">Enable Timeframe Restrictions</th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="enable_timeframe" value="1" <?php checked($settings['enable_timeframe'], true); ?> />
+                                Only allow orders during specific times
+                            </label>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <th scope="row">Start Time</th>
+                        <td>
+                            <input type="time" name="start_time" value="<?php echo esc_attr($settings['start_time']); ?>" />
+                            <p class="description">Orders will be allowed starting from this time</p>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <th scope="row">End Time</th>
+                        <td>
+                            <input type="time" name="end_time" value="<?php echo esc_attr($settings['end_time']); ?>" />
+                            <p class="description">Orders will be blocked after this time</p>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <th scope="row">Disabled Message</th>
+                        <td>
+                            <textarea name="disabled_message" rows="3" class="large-text"><?php echo esc_textarea($settings['disabled_message']); ?></textarea>
+                            <p class="description">Message shown to customers when orders are disabled</p>
+                        </td>
+                    </tr>
+                </table>
+                
+                <?php submit_button('Save Settings'); ?>
+            </form>
+        </div>
+        <?php
+    }
+    
+    /**
+     * Render Payment Gateway Control page
+     */
+    public function render_payment_gateway_page() {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+        
+        // Handle form submission
+        if (isset($_POST['ser_payment_gateway_nonce']) && wp_verify_nonce($_POST['ser_payment_gateway_nonce'], 'ser_payment_gateway_save')) {
+            $rules = array();
+            
+            if (isset($_POST['rules']) && is_array($_POST['rules'])) {
+                foreach ($_POST['rules'] as $rule) {
+                    if (!empty($rule['currencies'])) {
+                        $rules[] = array(
+                            'currencies' => array_map('sanitize_text_field', $rule['currencies']),
+                            'gateways' => isset($rule['gateways']) ? array_map('sanitize_text_field', $rule['gateways']) : array()
+                        );
+                    }
+                }
+            }
+            
+            $settings = array('rules' => $rules);
+            $this->payment_gateway_control->update_settings($settings);
+            echo '<div class="notice notice-success"><p>Settings saved successfully!</p></div>';
+        }
+        
+        $settings = $this->payment_gateway_control->get_settings();
+        $available_gateways = $this->payment_gateway_control->get_available_gateways();
+        $currencies = $this->payment_gateway_control->get_active_currencies();
+        $stats = $this->payment_gateway_control->get_statistics();
+        
+        ?>
+        <div class="wrap">
+            <h1>Payment Gateway Control</h1>
+            
+            <div class="notice notice-info">
+                <p>
+                    <strong>Total Rules:</strong> <?php echo $stats['total_rules']; ?> | 
+                    <strong>Active Currencies:</strong> <?php echo $stats['active_currencies']; ?> | 
+                    <strong>Available Gateways:</strong> <?php echo $stats['available_gateways']; ?>
+                </p>
+            </div>
+            
+            <form method="post" action="" id="payment-gateway-form">
+                <?php wp_nonce_field('ser_payment_gateway_save', 'ser_payment_gateway_nonce'); ?>
+                
+                <h2>Currency-Gateway Rules</h2>
+                <p>Configure which payment gateways should be available for selected currencies.</p>
+                
+                <div id="gateway-rules">
+                    <?php
+                    if (!empty($settings['rules'])) {
+                        foreach ($settings['rules'] as $index => $rule) {
+                            $this->render_gateway_rule_row($index, $rule, $currencies, $available_gateways);
+                        }
+                    } else {
+                        $this->render_gateway_rule_row(0, array('currencies' => array(), 'gateways' => array()), $currencies, $available_gateways);
+                    }
+                    ?>
+                </div>
+                
+                <p>
+                    <button type="button" class="button" id="add-rule">Add New Rule</button>
+                </p>
+                
+                <?php submit_button('Save Settings'); ?>
+            </form>
+        </div>
+        
+        <script>
+        jQuery(document).ready(function($) {
+            var ruleIndex = <?php echo !empty($settings['rules']) ? count($settings['rules']) : 1; ?>;
+            
+            $('#add-rule').on('click', function() {
+                var newRow = `
+                    <div class="gateway-rule" style="background: #f9f9f9; padding: 15px; margin-bottom: 10px; border: 1px solid #ddd;">
+                        <h3>Rule ${ruleIndex + 1} <button type="button" class="button remove-rule" style="float: right;">Remove</button></h3>
+                        <table class="form-table">
+                            <tr>
+                                <th>Currencies</th>
+                                <td>
+                                    <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #fff;">
+                                        <?php foreach ($currencies as $code => $name): ?>
+                                        <label style="display: block; margin: 5px 0;">
+                                            <input type="checkbox" name="rules[${ruleIndex}][currencies][]" value="<?php echo esc_attr($code); ?>" />
+                                            <?php echo esc_html($name); ?> (<?php echo esc_html($code); ?>)
+                                        </label>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <p class="description">Select one or more currencies for this rule</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Allowed Gateways</th>
+                                <td>
+                                    <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #fff;">
+                                        <?php foreach ($available_gateways as $gateway_id => $gateway_name): ?>
+                                        <label style="display: block; margin: 5px 0;">
+                                            <input type="checkbox" name="rules[${ruleIndex}][gateways][]" value="<?php echo esc_attr($gateway_id); ?>" />
+                                            <?php echo esc_html($gateway_name); ?>
+                                        </label>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <p class="description">Select which payment gateways to show for the selected currencies</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                `;
+                $('#gateway-rules').append(newRow);
+                ruleIndex++;
+            });
+            
+            $(document).on('click', '.remove-rule', function() {
+                $(this).closest('.gateway-rule').remove();
+            });
+        });
+        </script>
+        <?php
+    }
+    
+    /**
+     * Render a single gateway rule row
+     */
+    private function render_gateway_rule_row($index, $rule, $currencies, $available_gateways) {
+        $selected_currencies = isset($rule['currencies']) ? $rule['currencies'] : array();
+        ?>
+        <div class="gateway-rule" style="background: #f9f9f9; padding: 15px; margin-bottom: 10px; border: 1px solid #ddd;">
+            <h3>Rule <?php echo ($index + 1); ?> 
+                <?php if ($index > 0): ?>
+                <button type="button" class="button remove-rule" style="float: right;">Remove</button>
+                <?php endif; ?>
+            </h3>
+            <table class="form-table">
+                <tr>
+                    <th>Currencies</th>
+                    <td>
+                        <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #fff;">
+                            <?php foreach ($currencies as $code => $name): ?>
+                            <label style="display: block; margin: 5px 0;">
+                                <input type="checkbox" name="rules[<?php echo $index; ?>][currencies][]" value="<?php echo esc_attr($code); ?>" 
+                                    <?php checked(in_array($code, $selected_currencies)); ?> />
+                                <?php echo esc_html($name); ?> (<?php echo esc_html($code); ?>)
+                            </label>
+                            <?php endforeach; ?>
+                        </div>
+                        <p class="description">Select one or more currencies for this rule</p>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Allowed Gateways</th>
+                    <td>
+                        <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #fff;">
+                            <?php foreach ($available_gateways as $gateway_id => $gateway_name): ?>
+                            <label style="display: block; margin: 5px 0;">
+                                <input type="checkbox" name="rules[<?php echo $index; ?>][gateways][]" value="<?php echo esc_attr($gateway_id); ?>" 
+                                    <?php checked(in_array($gateway_id, isset($rule['gateways']) ? $rule['gateways'] : array())); ?> />
+                                <?php echo esc_html($gateway_name); ?>
+                            </label>
+                            <?php endforeach; ?>
+                        </div>
+                        <p class="description">Select which payment gateways to show for the selected currencies</p>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <?php
     }
     
     /**
@@ -687,7 +988,14 @@ class Shipping_Event_Receiver {
     }
 }
 
+} // End if class_exists check
+
 // Initialize the plugin only once
-if (!isset($GLOBALS['shipping_event_receiver_instance'])) {
-    $GLOBALS['shipping_event_receiver_instance'] = new Shipping_Event_Receiver();
+function shipping_event_receiver_init() {
+    if (!isset($GLOBALS['shipping_event_receiver_instance']) && class_exists('Shipping_Event_Receiver')) {
+        $GLOBALS['shipping_event_receiver_instance'] = new Shipping_Event_Receiver();
+    }
 }
+
+// Always run initialization on plugins_loaded
+add_action('plugins_loaded', 'shipping_event_receiver_init');
