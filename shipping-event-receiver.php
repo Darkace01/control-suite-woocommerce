@@ -3,7 +3,7 @@
  * Plugin Name: Shipping Event Receiver
  * Plugin URI: https://example.com/shipping-event-receiver
  * Description: Receives event notifications for orders from third-party shipping platforms and logs all requests
- * Version: 1.0.8
+ * Version: 1.1.1
  * Author: Kazeem Quadri
  * Author URI: https://example.com
  * License: GPL v2 or later
@@ -85,18 +85,28 @@ class Shipping_Event_Receiver {
             'Shipping Events',
             'manage_options',
             'shipping-event-receiver',
-            array($this, 'render_settings_page'),
+            array($this, 'render_dashboard_page'),
             'dashicons-upload',
             56
         );
         
-        // Add submenu for Logs (rename the first item)
+        // Add submenu for Dashboard
+        add_submenu_page(
+            'shipping-event-receiver',
+            'Dashboard',
+            'Dashboard',
+            'manage_options',
+            'shipping-event-receiver',
+            array($this, 'render_dashboard_page')
+        );
+        
+        // Add submenu for Event Logs
         add_submenu_page(
             'shipping-event-receiver',
             'Event Logs',
             'Event Logs',
             'manage_options',
-            'shipping-event-receiver',
+            'shipping-event-logs',
             array($this, 'render_settings_page')
         );
         
@@ -176,6 +186,116 @@ class Shipping_Event_Receiver {
         
         echo '<input type="text" name="' . $this->option_name . '[endpoint_slug]" value="' . esc_attr($endpoint) . '" class="regular-text" />';
         echo '<p class="description">Enter the endpoint slug (e.g., "shipping-webhook"). The full URL will be: <br><strong>' . esc_url($full_url) . '</strong></p>';
+    }
+    
+    /**
+     * Render Dashboard page
+     */
+    public function render_dashboard_page() {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+        
+        global $wpdb;
+        $log_table = $wpdb->prefix . $this->log_table;
+        
+        // Get statistics
+        $total_logs = $wpdb->get_var("SELECT COUNT(*) FROM $log_table");
+        $success_logs = $wpdb->get_var("SELECT COUNT(*) FROM $log_table WHERE status = 'success'");
+        $error_logs = $wpdb->get_var("SELECT COUNT(*) FROM $log_table WHERE status = 'error'");
+        $recent_logs = $wpdb->get_results("SELECT * FROM $log_table ORDER BY created_at DESC LIMIT 5");
+        
+        $order_stats = $this->order_control->get_statistics();
+        $payment_stats = $this->payment_gateway_control->get_statistics();
+        
+        $settings = get_option($this->option_name);
+        $endpoint = isset($settings['endpoint_slug']) ? $settings['endpoint_slug'] : 'shipping-webhook';
+        $full_url = rest_url('shipping/v1/' . $endpoint);
+        
+        ?>
+        <div class="wrap">
+            <h1>Shipping Events Dashboard</h1>
+            
+            <div class="dashboard-widgets" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0;">
+                
+                <!-- Webhook Info -->
+                <div class="dashboard-widget" style="background: #fff; padding: 20px; border: 1px solid #ccc; border-radius: 5px;">
+                    <h2 style="margin-top: 0;">Webhook Endpoint</h2>
+                    <p><strong>URL:</strong></p>
+                    <input type="text" value="<?php echo esc_url($full_url); ?>" readonly class="large-text" style="background: #f5f5f5;" />
+                    <p style="margin-top: 10px;">
+                        <a href="<?php echo admin_url('admin.php?page=shipping-event-logs'); ?>" class="button">View Logs</a>
+                    </p>
+                </div>
+                
+                <!-- Event Logs Stats -->
+                <div class="dashboard-widget" style="background: #fff; padding: 20px; border: 1px solid #ccc; border-radius: 5px;">
+                    <h2 style="margin-top: 0;">Event Logs</h2>
+                    <p><strong>Total:</strong> <?php echo number_format($total_logs); ?></p>
+                    <p><strong>Success:</strong> <span style="color: green;"><?php echo number_format($success_logs); ?></span></p>
+                    <p><strong>Errors:</strong> <span style="color: red;"><?php echo number_format($error_logs); ?></span></p>
+                    <p>
+                        <a href="<?php echo admin_url('admin.php?page=shipping-event-logs'); ?>" class="button">View All Logs</a>
+                    </p>
+                </div>
+                
+                <!-- Order Control Stats -->
+                <div class="dashboard-widget" style="background: #fff; padding: 20px; border: 1px solid #ccc; border-radius: 5px;">
+                    <h2 style="margin-top: 0;">Order Control</h2>
+                    <p><strong>Status:</strong> <span style="color: <?php echo $order_stats['current_status'] === 'active' ? 'green' : 'red'; ?>; font-weight: bold;"><?php echo ucfirst($order_stats['current_status']); ?></span></p>
+                    <p><strong>Orders Enabled:</strong> <?php echo $order_stats['orders_enabled'] ? 'Yes' : 'No'; ?></p>
+                    <p><strong>Timeframe Enabled:</strong> <?php echo $order_stats['timeframe_enabled'] ? 'Yes' : 'No'; ?></p>
+                    <p>
+                        <a href="<?php echo admin_url('admin.php?page=shipping-order-control'); ?>" class="button">Manage Orders</a>
+                    </p>
+                </div>
+                
+                <!-- Payment Gateway Stats -->
+                <div class="dashboard-widget" style="background: #fff; padding: 20px; border: 1px solid #ccc; border-radius: 5px;">
+                    <h2 style="margin-top: 0;">Payment Gateway Control</h2>
+                    <p><strong>Total Rules:</strong> <?php echo number_format($payment_stats['total_rules']); ?></p>
+                    <p><strong>Active Currencies:</strong> <?php echo number_format($payment_stats['active_currencies']); ?></p>
+                    <p><strong>Available Gateways:</strong> <?php echo number_format($payment_stats['available_gateways']); ?></p>
+                    <p>
+                        <a href="<?php echo admin_url('admin.php?page=shipping-payment-gateway'); ?>" class="button">Manage Gateways</a>
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div style="background: #fff; padding: 20px; border: 1px solid #ccc; border-radius: 5px; margin-top: 20px;">
+                <h2>Recent Event Logs</h2>
+                <?php if (!empty($recent_logs)): ?>
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>IP Address</th>
+                            <th>Status</th>
+                            <th>Created At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($recent_logs as $log): ?>
+                        <tr>
+                            <td><?php echo esc_html($log->id); ?></td>
+                            <td><?php echo esc_html($log->ip_address); ?></td>
+                            <td>
+                                <span style="color: <?php echo $log->status === 'success' ? 'green' : 'red'; ?>; font-weight: bold;">
+                                    <?php echo esc_html($log->status); ?>
+                                </span>
+                            </td>
+                            <td><?php echo esc_html($log->created_at); ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <?php else: ?>
+                <p>No recent logs found.</p>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php
     }
     
     /**
@@ -600,24 +720,54 @@ class Shipping_Event_Receiver {
             return;
         }
         
-        // Handle form submission
-        if (isset($_POST['ser_payment_gateway_nonce']) && wp_verify_nonce($_POST['ser_payment_gateway_nonce'], 'ser_payment_gateway_save')) {
-            $rules = array();
+        // Handle delete action
+        if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['rule_id']) && wp_verify_nonce($_GET['_wpnonce'], 'delete_rule')) {
+            $settings = $this->payment_gateway_control->get_settings();
+            $rule_id = intval($_GET['rule_id']);
+            if (isset($settings['rules'][$rule_id])) {
+                unset($settings['rules'][$rule_id]);
+                $settings['rules'] = array_values($settings['rules']); // Reindex array
+                $this->payment_gateway_control->update_settings($settings);
+                echo '<div class="notice notice-success"><p>Rule deleted successfully!</p></div>';
+            }
+        }
+        
+        // Handle toggle enabled/disabled
+        if (isset($_GET['action']) && $_GET['action'] === 'toggle' && isset($_GET['rule_id']) && wp_verify_nonce($_GET['_wpnonce'], 'toggle_rule')) {
+            $settings = $this->payment_gateway_control->get_settings();
+            $rule_id = intval($_GET['rule_id']);
+            if (isset($settings['rules'][$rule_id])) {
+                $settings['rules'][$rule_id]['enabled'] = !isset($settings['rules'][$rule_id]['enabled']) || $settings['rules'][$rule_id]['enabled'] ? false : true;
+                $this->payment_gateway_control->update_settings($settings);
+                echo '<div class="notice notice-success"><p>Rule status updated!</p></div>';
+            }
+        }
+        
+        // Handle add/edit rule submission
+        if (isset($_POST['ser_payment_gateway_rule_nonce']) && wp_verify_nonce($_POST['ser_payment_gateway_rule_nonce'], 'ser_payment_gateway_rule_save')) {
+            $settings = $this->payment_gateway_control->get_settings();
             
-            if (isset($_POST['rules']) && is_array($_POST['rules'])) {
-                foreach ($_POST['rules'] as $rule) {
-                    if (!empty($rule['currencies'])) {
-                        $rules[] = array(
-                            'currencies' => array_map('sanitize_text_field', $rule['currencies']),
-                            'gateways' => isset($rule['gateways']) ? array_map('sanitize_text_field', $rule['gateways']) : array()
-                        );
-                    }
+            $rule = array(
+                'currencies' => isset($_POST['currencies']) ? array_map('sanitize_text_field', $_POST['currencies']) : array(),
+                'gateways' => isset($_POST['gateways']) ? array_map('sanitize_text_field', $_POST['gateways']) : array(),
+                'enabled' => isset($_POST['enabled']) ? true : false,
+                'name' => sanitize_text_field($_POST['rule_name'])
+            );
+            
+            if (isset($_POST['rule_id']) && $_POST['rule_id'] !== '') {
+                // Edit existing rule
+                $rule_id = intval($_POST['rule_id']);
+                $settings['rules'][$rule_id] = $rule;
+            } else {
+                // Add new rule
+                if (!isset($settings['rules'])) {
+                    $settings['rules'] = array();
                 }
+                $settings['rules'][] = $rule;
             }
             
-            $settings = array('rules' => $rules);
             $this->payment_gateway_control->update_settings($settings);
-            echo '<div class="notice notice-success"><p>Settings saved successfully!</p></div>';
+            echo '<div class="notice notice-success"><p>Rule saved successfully!</p></div>';
         }
         
         $settings = $this->payment_gateway_control->get_settings();
@@ -625,7 +775,161 @@ class Shipping_Event_Receiver {
         $currencies = $this->payment_gateway_control->get_active_currencies();
         $stats = $this->payment_gateway_control->get_statistics();
         
+        // Check if we're in edit/add mode
+        $edit_mode = isset($_GET['action']) && ($_GET['action'] === 'edit' || $_GET['action'] === 'add');
+        $edit_rule_id = isset($_GET['rule_id']) ? intval($_GET['rule_id']) : null;
+        $edit_rule = ($edit_mode && $edit_rule_id !== null && isset($settings['rules'][$edit_rule_id])) ? $settings['rules'][$edit_rule_id] : array();
+        
         ?>
+        <div class="wrap">
+            <h1>Payment Gateway Control</h1>
+            
+            <div class="notice notice-info">
+                <p>
+                    <strong>Total Rules:</strong> <?php echo $stats['total_rules']; ?> | 
+                    <strong>Active Currencies:</strong> <?php echo $stats['active_currencies']; ?> | 
+                    <strong>Available Gateways:</strong> <?php echo $stats['available_gateways']; ?>
+                </p>
+            </div>
+            
+            <?php if ($edit_mode): ?>
+                <!-- Edit/Add Rule Form -->
+                <div style="background: #fff; padding: 20px; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 20px;">
+                    <h2><?php echo $_GET['action'] === 'add' ? 'Add New Rule' : 'Edit Rule'; ?></h2>
+                    
+                    <form method="post" action="">
+                        <?php wp_nonce_field('ser_payment_gateway_rule_save', 'ser_payment_gateway_rule_nonce'); ?>
+                        <?php if ($edit_rule_id !== null && $_GET['action'] === 'edit'): ?>
+                            <input type="hidden" name="rule_id" value="<?php echo $edit_rule_id; ?>" />
+                        <?php endif; ?>
+                        
+                        <table class="form-table">
+                            <tr>
+                                <th scope="row"><label for="rule_name">Rule Name</label></th>
+                                <td>
+                                    <input type="text" id="rule_name" name="rule_name" value="<?php echo esc_attr(isset($edit_rule['name']) ? $edit_rule['name'] : ''); ?>" class="regular-text" required />
+                                    <p class="description">Give this rule a descriptive name</p>
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <th scope="row">Currencies</th>
+                                <td>
+                                    <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #fff;">
+                                        <?php foreach ($currencies as $code => $name): ?>
+                                        <label style="display: block; margin: 5px 0;">
+                                            <input type="checkbox" name="currencies[]" value="<?php echo esc_attr($code); ?>" 
+                                                <?php checked(in_array($code, isset($edit_rule['currencies']) ? $edit_rule['currencies'] : array())); ?> />
+                                            <?php echo esc_html($name); ?> (<?php echo esc_html($code); ?>)
+                                        </label>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <p class="description">Select currencies for this rule</p>
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <th scope="row">Allowed Gateways</th>
+                                <td>
+                                    <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #fff;">
+                                        <?php foreach ($available_gateways as $gateway_id => $gateway_name): ?>
+                                        <label style="display: block; margin: 5px 0;">
+                                            <input type="checkbox" name="gateways[]" value="<?php echo esc_attr($gateway_id); ?>" 
+                                                <?php checked(in_array($gateway_id, isset($edit_rule['gateways']) ? $edit_rule['gateways'] : array())); ?> />
+                                            <?php echo esc_html($gateway_name); ?>
+                                        </label>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <p class="description">Select payment gateways for these currencies</p>
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <th scope="row">Status</th>
+                                <td>
+                                    <label>
+                                        <input type="checkbox" name="enabled" value="1" <?php checked(!isset($edit_rule['enabled']) || $edit_rule['enabled']); ?> />
+                                        Enable this rule
+                                    </label>
+                                </td>
+                            </tr>
+                        </table>
+                        
+                        <p class="submit">
+                            <input type="submit" name="submit" class="button button-primary" value="Save Rule" />
+                            <a href="<?php echo admin_url('admin.php?page=shipping-payment-gateway'); ?>" class="button">Cancel</a>
+                        </p>
+                    </form>
+                </div>
+            <?php else: ?>
+                <!-- Rules List Table -->
+                <p>
+                    <a href="<?php echo admin_url('admin.php?page=shipping-payment-gateway&action=add'); ?>" class="button button-primary">Add New Rule</a>
+                </p>
+                
+                <?php if (!empty($settings['rules'])): ?>
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">ID</th>
+                            <th>Rule Name</th>
+                            <th>Currencies</th>
+                            <th>Gateways</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($settings['rules'] as $index => $rule): ?>
+                        <tr>
+                            <td><?php echo ($index + 1); ?></td>
+                            <td><strong><?php echo esc_html(isset($rule['name']) ? $rule['name'] : 'Rule ' . ($index + 1)); ?></strong></td>
+                            <td>
+                                <?php 
+                                $rule_currencies = isset($rule['currencies']) ? $rule['currencies'] : array();
+                                echo esc_html(implode(', ', $rule_currencies));
+                                ?>
+                            </td>
+                            <td>
+                                <?php 
+                                $rule_gateways = isset($rule['gateways']) ? $rule['gateways'] : array();
+                                $gateway_names = array();
+                                foreach ($rule_gateways as $gw_id) {
+                                    if (isset($available_gateways[$gw_id])) {
+                                        $gateway_names[] = $available_gateways[$gw_id];
+                                    }
+                                }
+                                echo esc_html(implode(', ', $gateway_names));
+                                ?>
+                            </td>
+                            <td>
+                                <?php 
+                                $is_enabled = !isset($rule['enabled']) || $rule['enabled'];
+                                echo $is_enabled ? '<span style="color: green;">●</span> Enabled' : '<span style="color: red;">●</span> Disabled';
+                                ?>
+                            </td>
+                            <td>
+                                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=shipping-payment-gateway&action=edit&rule_id=' . $index), 'edit_rule'); ?>" class="button button-small">Edit</a>
+                                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=shipping-payment-gateway&action=toggle&rule_id=' . $index), 'toggle_rule'); ?>" class="button button-small">
+                                    <?php echo $is_enabled ? 'Disable' : 'Enable'; ?>
+                                </a>
+                                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=shipping-payment-gateway&action=delete&rule_id=' . $index), 'delete_rule'); ?>" 
+                                   class="button button-small" 
+                                   onclick="return confirm('Are you sure you want to delete this rule?');">Delete</a>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <?php else: ?>
+                <div class="notice notice-warning">
+                    <p>No payment gateway rules configured yet. <a href="<?php echo admin_url('admin.php?page=shipping-payment-gateway&action=add'); ?>">Add your first rule</a>.</p>
+                </div>
+                <?php endif; ?>
+            <?php endif; ?>
+        </div>
+        <?php
+    }
         <div class="wrap">
             <h1>Payment Gateway Control</h1>
             
@@ -712,54 +1016,6 @@ class Shipping_Event_Receiver {
             });
         });
         </script>
-        <?php
-    }
-    
-    /**
-     * Render a single gateway rule row
-     */
-    private function render_gateway_rule_row($index, $rule, $currencies, $available_gateways) {
-        $selected_currencies = isset($rule['currencies']) ? $rule['currencies'] : array();
-        ?>
-        <div class="gateway-rule" style="background: #f9f9f9; padding: 15px; margin-bottom: 10px; border: 1px solid #ddd;">
-            <h3>Rule <?php echo ($index + 1); ?> 
-                <?php if ($index > 0): ?>
-                <button type="button" class="button remove-rule" style="float: right;">Remove</button>
-                <?php endif; ?>
-            </h3>
-            <table class="form-table">
-                <tr>
-                    <th>Currencies</th>
-                    <td>
-                        <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #fff;">
-                            <?php foreach ($currencies as $code => $name): ?>
-                            <label style="display: block; margin: 5px 0;">
-                                <input type="checkbox" name="rules[<?php echo $index; ?>][currencies][]" value="<?php echo esc_attr($code); ?>" 
-                                    <?php checked(in_array($code, $selected_currencies)); ?> />
-                                <?php echo esc_html($name); ?> (<?php echo esc_html($code); ?>)
-                            </label>
-                            <?php endforeach; ?>
-                        </div>
-                        <p class="description">Select one or more currencies for this rule</p>
-                    </td>
-                </tr>
-                <tr>
-                    <th>Allowed Gateways</th>
-                    <td>
-                        <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #fff;">
-                            <?php foreach ($available_gateways as $gateway_id => $gateway_name): ?>
-                            <label style="display: block; margin: 5px 0;">
-                                <input type="checkbox" name="rules[<?php echo $index; ?>][gateways][]" value="<?php echo esc_attr($gateway_id); ?>" 
-                                    <?php checked(in_array($gateway_id, isset($rule['gateways']) ? $rule['gateways'] : array())); ?> />
-                                <?php echo esc_html($gateway_name); ?>
-                            </label>
-                            <?php endforeach; ?>
-                        </div>
-                        <p class="description">Select which payment gateways to show for the selected currencies</p>
-                    </td>
-                </tr>
-            </table>
-        </div>
         <?php
     }
     
