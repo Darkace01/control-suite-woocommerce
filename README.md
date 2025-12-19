@@ -1,16 +1,17 @@
-# Commerce Control Suite
+=== Commerce Control Suite ===
+Contributors: kazeemquadri
+Tags: woocommerce, order control, payment gateway, shipping, webhooks
+Requires at least: 5.0
+Tested up to: 6.4
+Stable tag: 1.2.7
+License: GPLv2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-**Version:** 1.2.7  
-**Requires at least:** WordPress 5.0, WooCommerce 3.0  
-**Tested up to:** WordPress 6.4, WooCommerce 8.0  
-**License:** GPL v2 or later  
-**Author:** Kazeem Quadri
-
-## Description
+== Description ==
 
 Commerce Control Suite is a comprehensive WordPress plugin that gives you complete control over your WooCommerce store operations. Manage order restrictions, payment gateway rules, and shipping event webhooks all from one powerful dashboard.
 
-## Features
+== Features ==
 
 ### 📦 Order Control
 
@@ -49,14 +50,14 @@ Commerce Control Suite is a comprehensive WordPress plugin that gives you comple
 - **Status Indicators** - Visual indicators for enabled/disabled features
 - **Quick Links** - Easy navigation to all settings
 
-## Installation
+== Installation ==
 
 1. Upload the plugin files to `/wp-content/plugins/woocommerce-control-suite/`
 2. Activate the plugin through the 'Plugins' menu in WordPress
 3. Navigate to **WC Control Suite** in the WordPress admin menu
 4. Configure your settings in each section
 
-## Configuration
+== Configuration ==
 
 ### Order Control Settings
 
@@ -92,7 +93,7 @@ Commerce Control Suite is a comprehensive WordPress plugin that gives you comple
 https://yoursite.com/wp-json/shipping/v1/your-endpoint-slug
 ```
 
-## Frequently Asked Questions
+== Frequently Asked Questions ==
 
 ### Can I restrict orders for specific products only?
 
@@ -121,7 +122,7 @@ You can implement additional security by:
 - Validating request headers
 - IP whitelisting (custom implementation)
 
-## Changelog
+== Changelog ==
 
 ### 1.2.7
 
@@ -133,7 +134,7 @@ You can implement additional security by:
 ### 1.2.1
 
 - Renamed plugin to "Commerce Control Suite"
-- Updated text domain to `wc-control-suite`
+- Updated text domain to `commerce-control-suite`
 - Added dashicons to admin pages
 - Improved UI/UX with visual indicators
 
@@ -164,14 +165,14 @@ You can implement additional security by:
 
 - Initial releases with basic features
 
-## Support
+== Support ==
 
 For support, feature requests, or bug reports, please contact the plugin author.
 
-## Credits
+== Credits ==
 
 Developed by Kazeem Quadri
 
-## License
+== License ==
 
 This plugin is licensed under the GPL v2 or later.

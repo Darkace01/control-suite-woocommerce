@@ -8,7 +8,7 @@
  * Author URI: https://github.com/Darkace01
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: wc-control-suite
+ * Text Domain: commerce-control-suite
  * Requires at least: 5.0
  * Requires PHP: 7.2
  * WC requires at least: 3.0
@@ -91,10 +91,10 @@ class Shipping_Event_Receiver {
     public function handle_old_page_slug() {
         if (is_admin() && isset($_GET['page'])) {
             $old_to_new = array(
-                'shipping-event-receiver' => 'wc-control-suite',
-                'shipping-event-logs' => 'wc-event-logs',
-                'shipping-order-control' => 'wc-order-control',
-                'shipping-payment-gateway' => 'wc-payment-gateway'
+                'shipping-event-receiver' => 'commerce-control-suite',
+                'shipping-event-logs' => 'commerce-event-logs',
+                'shipping-order-control' => 'commerce-order-control',
+                'shipping-payment-gateway' => 'commerce-payment-gateway'
             );
             
             $current_page = sanitize_text_field($_GET['page']);
@@ -130,7 +130,7 @@ class Shipping_Event_Receiver {
             'Commerce Control Suite',
             'WC Control Suite',
             'manage_options',
-            'wc-control-suite',
+            'commerce-control-suite',
             array($this, 'render_dashboard_page'),
             'dashicons-admin-generic',
             56
@@ -138,41 +138,41 @@ class Shipping_Event_Receiver {
         
         // Add submenu for Dashboard
         add_submenu_page(
-            'wc-control-suite',
+            'commerce-control-suite',
             'Dashboard',
             'Dashboard',
             'manage_options',
-            'wc-control-suite',
+            'commerce-control-suite',
             array($this, 'render_dashboard_page')
         );
         
         // Add submenu for Event Logs
         add_submenu_page(
-            'wc-control-suite',
+            'commerce-control-suite',
             'Shipping Event Logs',
             'Event Logs',
             'manage_options',
-            'wc-event-logs',
+            'commerce-event-logs',
             array($this, 'render_settings_page')
         );
         
         // Add submenu for Order Control
         add_submenu_page(
-            'wc-control-suite',
+            'commerce-control-suite',
             'Order Control',
             'Order Control',
             'manage_options',
-            'wc-order-control',
+            'commerce-order-control',
             array($this, 'render_order_control_page')
         );
         
         // Add submenu for Payment Gateway Control
         add_submenu_page(
-            'wc-control-suite',
+            'commerce-control-suite',
             'Payment Gateway Control',
             'Payment Gateway',
             'manage_options',
-            'wc-payment-gateway',
+            'commerce-payment-gateway',
             array($this, 'render_payment_gateway_page')
         );
     }
@@ -270,7 +270,7 @@ class Shipping_Event_Receiver {
                     <p><strong>URL:</strong></p>
                     <input type="text" value="<?php echo esc_url($full_url); ?>" readonly class="large-text" style="background: #f5f5f5;" />
                     <p style="margin-top: 10px;">
-                        <a href="<?php echo admin_url('admin.php?page=wc-event-logs'); ?>" class="button">View Logs</a>
+                        <a href="<?php echo admin_url('admin.php?page=commerce-event-logs'); ?>" class="button">View Logs</a>
                     </p>
                 </div>
                 
@@ -281,7 +281,7 @@ class Shipping_Event_Receiver {
                     <p><strong>Success:</strong> <span style="color: green;"><?php echo number_format($success_logs); ?></span></p>
                     <p><strong>Errors:</strong> <span style="color: red;"><?php echo number_format($error_logs); ?></span></p>
                     <p>
-                        <a href="<?php echo admin_url('admin.php?page=wc-event-logs'); ?>" class="button">View All Logs</a>
+                        <a href="<?php echo admin_url('admin.php?page=commerce-event-logs'); ?>" class="button">View All Logs</a>
                     </p>
                 </div>
                 
@@ -292,7 +292,7 @@ class Shipping_Event_Receiver {
                     <p><strong>Orders Enabled:</strong> <?php echo $order_stats['orders_enabled'] ? 'Yes' : 'No'; ?></p>
                     <p><strong>Timeframe Enabled:</strong> <?php echo $order_stats['timeframe_enabled'] ? 'Yes' : 'No'; ?></p>
                     <p>
-                        <a href="<?php echo admin_url('admin.php?page=wc-order-control'); ?>" class="button">Manage Orders</a>
+                        <a href="<?php echo admin_url('admin.php?page=commerce-order-control'); ?>" class="button">Manage Orders</a>
                     </p>
                 </div>
                 
@@ -303,7 +303,7 @@ class Shipping_Event_Receiver {
                     <p><strong>Active Currencies:</strong> <?php echo number_format($payment_stats['active_currencies']); ?></p>
                     <p><strong>Available Gateways:</strong> <?php echo number_format($payment_stats['available_gateways']); ?></p>
                     <p>
-                        <a href="<?php echo admin_url('admin.php?page=wc-payment-gateway'); ?>" class="button">Manage Gateways</a>
+                        <a href="<?php echo admin_url('admin.php?page=commerce-payment-gateway'); ?>" class="button">Manage Gateways</a>
                     </p>
                 </div>
             </div>
@@ -666,7 +666,7 @@ class Shipping_Event_Receiver {
      * Add settings link on plugins page
      */
     public function add_settings_link($links) {
-        $settings_link = '<a href="' . admin_url('admin.php?page=wc-control-suite') . '">Settings</a>';
+        $settings_link = '<a href="' . admin_url('admin.php?page=commerce-control-suite') . '">Settings</a>';
         array_unshift($links, $settings_link);
         return $links;
     }
@@ -1027,14 +1027,14 @@ class Shipping_Event_Receiver {
                         
                         <p class="submit">
                             <input type="submit" name="submit" class="button button-primary" value="Save Rule" />
-                            <a href="<?php echo admin_url('admin.php?page=wc-payment-gateway'); ?>" class="button">Cancel</a>
+                            <a href="<?php echo admin_url('admin.php?page=commerce-payment-gateway'); ?>" class="button">Cancel</a>
                         </p>
                     </form>
                 </div>
             <?php else: ?>
                 <!-- Rules List Table -->
                 <p>
-                    <a href="<?php echo admin_url('admin.php?page=wc-payment-gateway&action=add'); ?>" class="button button-primary">Add New Rule</a>
+                    <a href="<?php echo admin_url('admin.php?page=commerce-payment-gateway&action=add'); ?>" class="button button-primary">Add New Rule</a>
                 </p>
                 
                 <?php if (!empty($settings['rules'])): ?>
@@ -1079,11 +1079,11 @@ class Shipping_Event_Receiver {
                                 ?>
                             </td>
                             <td>
-                                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=wc-payment-gateway&action=edit&rule_id=' . $index), 'edit_rule'); ?>" class="button button-small">Edit</a>
-                                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=wc-payment-gateway&action=toggle&rule_id=' . $index), 'toggle_rule'); ?>" class="button button-small">
+                                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=commerce-payment-gateway&action=edit&rule_id=' . $index), 'edit_rule'); ?>" class="button button-small">Edit</a>
+                                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=commerce-payment-gateway&action=toggle&rule_id=' . $index), 'toggle_rule'); ?>" class="button button-small">
                                     <?php echo $is_enabled ? 'Disable' : 'Enable'; ?>
                                 </a>
-                                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=wc-payment-gateway&action=delete&rule_id=' . $index), 'delete_rule'); ?>" 
+                                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=commerce-payment-gateway&action=delete&rule_id=' . $index), 'delete_rule'); ?>" 
                                    class="button button-small" 
                                    onclick="return confirm('Are you sure you want to delete this rule?');">Delete</a>
                             </td>
@@ -1093,7 +1093,7 @@ class Shipping_Event_Receiver {
                 </table>
                 <?php else: ?>
                 <div class="notice notice-warning">
-                    <p>No payment gateway rules configured yet. <a href="<?php echo admin_url('admin.php?page=wc-payment-gateway&action=add'); ?>">Add your first rule</a>.</p>
+                    <p>No payment gateway rules configured yet. <a href="<?php echo admin_url('admin.php?page=commerce-payment-gateway&action=add'); ?>">Add your first rule</a>.</p>
                 </div>
                 <?php endif; ?>
             <?php endif; ?>
@@ -1349,7 +1349,7 @@ function shipping_event_receiver_init() {
         add_action('admin_notices', function() {
             ?>
             <div class="notice notice-error is-dismissible">
-                <p><?php _e('Commerce Control Suite requires WooCommerce to be installed and active.', 'wc-control-suite'); ?></p>
+                <p><?php _e('Commerce Control Suite requires WooCommerce to be installed and active.', 'commerce-control-suite'); ?></p>
             </div>
             <?php
         });

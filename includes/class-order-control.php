@@ -147,7 +147,7 @@ class SER_Order_Control {
         if (!$this->are_orders_enabled()) {
             $settings = $this->get_settings();
             $message = isset($settings['disabled_message']) ? $settings['disabled_message'] : 
-                       __('Orders are currently disabled. Please try again later.', 'wc-control-suite');
+                       __('Orders are currently disabled. Please try again later.', 'commerce-control-suite');
             
             wc_add_notice($message, 'error');
         }
@@ -160,7 +160,7 @@ class SER_Order_Control {
         if (!$this->are_orders_enabled()) {
             $settings = $this->get_settings();
             $message = isset($settings['disabled_message']) ? $settings['disabled_message'] : 
-                       __('Orders are currently disabled. Please try again later.', 'wc-control-suite');
+                       __('Orders are currently disabled. Please try again later.', 'commerce-control-suite');
             
             $errors->add('orders_disabled', $message);
         }
@@ -189,7 +189,7 @@ class SER_Order_Control {
         if (!$this->can_order_product($product->get_id())) {
             $settings = $this->get_settings();
             $message = isset($settings['disabled_message']) ? $settings['disabled_message'] : 
-                       __('Orders are currently disabled. Please try again later.', 'shipping-event-receiver');
+                       __('Orders are currently disabled. Please try again later.', 'commerce-control-suite');
             
             echo '<div class="woocommerce-info" style="margin: 20px 0;">' . esc_html($message) . '</div>';
         }
@@ -226,7 +226,7 @@ class SER_Order_Control {
             'restricted_categories' => array(),
             'restricted_products' => array(),
             'redirect_url' => '',
-            'disabled_message' => __('Orders are currently disabled. Please try again later.', 'wc-control-suite')
+            'disabled_message' => __('Orders are currently disabled. Please try again later.', 'commerce-control-suite')
         ));
     }
     
