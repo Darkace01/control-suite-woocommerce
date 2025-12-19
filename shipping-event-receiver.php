@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: WooCommerce Control Suite
+ * Plugin Name: Commerce Control Suite
  * Plugin URI: https://github.com/Darkace01/wooCommerce-control-suite
  * Description: Complete control suite for WooCommerce - manage order restrictions, payment gateway rules, and shipping event webhooks
  * Version: 1.2.7
@@ -127,7 +127,7 @@ class Shipping_Event_Receiver {
         
         // Add top-level menu in sidebar
         add_menu_page(
-            'WooCommerce Control Suite',
+            'Commerce Control Suite',
             'WC Control Suite',
             'manage_options',
             'wc-control-suite',
@@ -260,7 +260,7 @@ class Shipping_Event_Receiver {
         
         ?>
         <div class="wrap">
-            <h1>WooCommerce Control Suite - Dashboard</h1>
+            <h1>Commerce Control Suite - Dashboard</h1>
             
             <div class="dashboard-widgets" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0;">
                 
@@ -1349,7 +1349,7 @@ function shipping_event_receiver_init() {
         add_action('admin_notices', function() {
             ?>
             <div class="notice notice-error is-dismissible">
-                <p><?php _e('WooCommerce Control Suite requires WooCommerce to be installed and active.', 'wc-control-suite'); ?></p>
+                <p><?php _e('Commerce Control Suite requires WooCommerce to be installed and active.', 'wc-control-suite'); ?></p>
             </div>
             <?php
         });

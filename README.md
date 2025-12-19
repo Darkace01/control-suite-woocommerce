@@ -1,4 +1,4 @@
-# WooCommerce Control Suite
+# Commerce Control Suite
 
 **Version:** 1.2.7  
 **Requires at least:** WordPress 5.0, WooCommerce 3.0  
@@ -8,7 +8,7 @@
 
 ## Description
 
-WooCommerce Control Suite is a comprehensive WordPress plugin that gives you complete control over your WooCommerce store operations. Manage order restrictions, payment gateway rules, and shipping event webhooks all from one powerful dashboard.
+Commerce Control Suite is a comprehensive WordPress plugin that gives you complete control over your WooCommerce store operations. Manage order restrictions, payment gateway rules, and shipping event webhooks all from one powerful dashboard.
 
 ## Features
 
@@ -132,7 +132,7 @@ You can implement additional security by:
 
 ### 1.2.1
 
-- Renamed plugin to "WooCommerce Control Suite"
+- Renamed plugin to "Commerce Control Suite"
 - Updated text domain to `wc-control-suite`
 - Added dashicons to admin pages
 - Improved UI/UX with visual indicators
