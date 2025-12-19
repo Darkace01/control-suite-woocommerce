@@ -3,7 +3,7 @@
  * Plugin Name: WooCommerce Control Suite
  * Plugin URI: https://example.com/woocommerce-control-suite
  * Description: Complete control suite for WooCommerce - manage order restrictions, payment gateway rules, and shipping event webhooks
- * Version: 1.2.6
+ * Version: 1.2.7
  * Author: Kazeem Quadri
  * Author URI: https://example.com
  * License: GPL v2 or later
@@ -27,7 +27,7 @@ if (!defined('SHIPPING_EVENT_RECEIVER_FILE')) {
 
 // Define plugin constants
 if (!defined('WC_CONTROL_SUITE_VERSION')) {
-    define('WC_CONTROL_SUITE_VERSION', '1.2.0');
+    define('WC_CONTROL_SUITE_VERSION', '1.2.7');
 }
 if (!defined('WC_CONTROL_SUITE_PLUGIN_DIR')) {
     define('WC_CONTROL_SUITE_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -113,7 +113,7 @@ class Shipping_Event_Receiver {
      * Get endpoint slug from settings
      */
     private function get_endpoint() {
-        $settings = get_option($this->option_name);
+        $settings = get_option($this->option_name, array());
         $endpoint = isset($settings['endpoint_slug']) ? $settings['endpoint_slug'] : 'shipping-webhook';
         return sanitize_title($endpoint);
     }
@@ -226,7 +226,7 @@ class Shipping_Event_Receiver {
      * Render endpoint field
      */
     public function render_endpoint_field() {
-        $settings = get_option($this->option_name);
+        $settings = get_option($this->option_name, array());
         $endpoint = isset($settings['endpoint_slug']) ? $settings['endpoint_slug'] : 'shipping-webhook';
         $full_url = rest_url('shipping/v1/' . $endpoint);
         
@@ -254,7 +254,7 @@ class Shipping_Event_Receiver {
         $order_stats = $this->order_control->get_statistics();
         $payment_stats = $this->payment_gateway_control->get_statistics();
         
-        $settings = get_option($this->option_name);
+        $settings = get_option($this->option_name, array());
         $endpoint = isset($settings['endpoint_slug']) ? $settings['endpoint_slug'] : 'shipping-webhook';
         $full_url = rest_url('shipping/v1/' . $endpoint);
         
@@ -352,7 +352,7 @@ class Shipping_Event_Receiver {
             return;
         }
         
-        $settings = get_option($this->option_name);
+        $settings = get_option($this->option_name, array());
         $endpoint = isset($settings['endpoint_slug']) ? $settings['endpoint_slug'] : 'shipping-webhook';
         $full_url = rest_url('shipping/v1/' . $endpoint);
         
