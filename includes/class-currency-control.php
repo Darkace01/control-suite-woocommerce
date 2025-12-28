@@ -386,30 +386,7 @@ class CommerceControlSuiteCurrencyControl {
             ?>
             </tbody>
         </table>
-        <button type="button" class="button" id="add-currency-rate">Add Currency</button>
-
-        <script type="text/javascript">
-            jQuery(document).ready(function($) {
-                let rowIndex = <?php echo !empty($this->settings['currencies']) ? count($this->settings['currencies']) : 0; ?>;
-
-                $('#add-currency-rate').on('click', function() {
-                    let newRow = `
-                        <tr class="currency-rate-row">
-                            <td><input type="text" name="<?php echo esc_attr($this->option_name); ?>[currencies][${rowIndex}][code]" class="regular-text" /></td>
-                            <td><input type="text" name="<?php echo esc_attr($this->option_name); ?>[currencies][${rowIndex}][symbol]" class="regular-text" /></td>
-                            <td><input type="number" step="0.0001" name="<?php echo esc_attr($this->option_name); ?>[currencies][${rowIndex}][rate]" class="regular-text" /></td>
-                            <td><button type="button" class="button remove-currency-rate">Remove</button></td>
-                        </tr>
-                    `;
-                    $('#currency-rates-body').append(newRow);
-                    rowIndex++;
-                });
-
-                $('#currency-rates-table').on('click', '.remove-currency-rate', function() {
-                    $(this).closest('tr').remove();
-                });
-            });
-        </script>
+        <button type="button" class="button" id="add-currency-rate" data-option-name="<?php echo esc_attr($this->option_name); ?>">Add Currency</button>
         <?php
     }
 

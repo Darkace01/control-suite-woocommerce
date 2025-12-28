@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Commerce Control Suite
- * Plugin URI: https://github.com/Darkace01/ommerce-control-suite
- * Description: Complete control suite for WooCommerce - manage order restrictions, payment gateway rules, shipping event webhooks, and advanced currency control with URL switching and product-specific pricing.
+ * Plugin URI: https://github.com/Darkace01/commerce-control-suite
+ * Description: Comprehensive control suite for WooCommerce to manage order restrictions, payment gateway rules, shipping event webhooks, and advanced currency switching.
  * Version: 1.2.7
  * Author: Kazeem Quadri
  * Author URI: https://github.com/Darkace01
@@ -86,7 +86,28 @@ class CommerceControlSuite {
         add_filter('plugin_action_links_' . plugin_basename($this->pluginFile), array($this, 'addSettingsLink'));
         
         // Register AJAX handlers
-        add_action('wp_ajax_get_log_details', array($this, 'ajaxGetLogDetails'));
+        add_action('wp_ajax_commerce_control_suite_get_log_details', array($this, 'ajaxGetLogDetails'));
+
+        // Enqueue admin assets
+        add_action('admin_enqueue_scripts', array($this, 'enqueueAdminAssets'));
+    }
+
+    /**
+     * Enqueue admin assets
+     */
+    public function enqueueAdminAssets($hook) {
+        // Only load on our plugin pages
+        if (strpos($hook, self::PAGE_DASHBOARD) === false) {
+            return;
+        }
+
+        wp_enqueue_style('commerce-control-suite-admin', plugins_url('assets/css/admin.css', $this->pluginFile), array(), COMMERCE_CONTROL_SUITE_VERSION);
+        wp_enqueue_script('commerce-control-suite-admin', plugins_url('assets/js/admin.js', $this->pluginFile), array('jquery'), COMMERCE_CONTROL_SUITE_VERSION, true);
+
+        wp_localize_script('commerce-control-suite-admin', 'commerceControlSuiteAdmin', array(
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce'    => wp_create_nonce('shipping_event_logs')
+        ));
     }
     
     private function loadDependencies() {
@@ -136,7 +157,7 @@ class CommerceControlSuite {
         // Add top-level menu in sidebar
         add_menu_page(
             'Commerce Control Suite',
-            'WC Control Suite',
+            'Commerce Control Suite',
             'manage_options',
             self::PAGE_DASHBOARD,
             array($this, 'renderDashboardPage'),
@@ -529,190 +550,6 @@ class CommerceControlSuite {
                 </div>
             </div>
         </div>
-        
-        <style>
-            .status-success { color: #46b450; font-weight: bold; }
-            .status-error { color: #dc3232; font-weight: bold; }
-            .status-pending { color: #ffb900; font-weight: bold; }
-            
-            .log-modal-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.7);
-                z-index: 100000;
-            }
-            
-            .log-modal-content {
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: #fff;
-                border-radius: 4px;
-                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-                z-index: 100001;
-                width: 90%;
-                max-width: 900px;
-                max-height: 90vh;
-                display: flex;
-                flex-direction: column;
-            }
-            
-            .log-modal-header {
-                padding: 20px;
-                border-bottom: 1px solid #ddd;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-            
-            .log-modal-header h2 {
-                margin: 0;
-                font-size: 20px;
-            }
-            
-            .log-modal-close {
-                background: none;
-                border: none;
-                font-size: 30px;
-                cursor: pointer;
-                color: #666;
-                padding: 0;
-                width: 30px;
-                height: 30px;
-                line-height: 30px;
-            }
-            
-            .log-modal-close:hover {
-                color: #000;
-            }
-            
-            .log-modal-body {
-                padding: 20px;
-                overflow-y: auto;
-                flex: 1;
-            }
-            
-            .log-code-block {
-                background: #f5f5f5;
-                border: 1px solid #ddd;
-                border-radius: 3px;
-                padding: 15px;
-                overflow-x: auto;
-                font-family: 'Courier New', monospace;
-                font-size: 12px;
-                line-height: 1.5;
-                max-height: 300px;
-                overflow-y: auto;
-            }
-            
-            .log-modal-body h3 {
-                margin-top: 20px;
-                margin-bottom: 10px;
-                font-size: 16px;
-            }
-            
-            .log-modal-body table {
-                margin-bottom: 20px;
-            }
-            
-            .log-modal-body table th {
-                width: 150px;
-                text-align: left;
-                font-weight: bold;
-                padding: 8px;
-            }
-            
-            .log-modal-body table td {
-                padding: 8px;
-            }
-        </style>
-        
-        <script>
-        jQuery(document).ready(function($) {
-            var modal = $('#log-details-modal');
-            
-            // Open modal and load log details
-            $('.view-log-details').on('click', function() {
-                var logId = $(this).data('log-id');
-                
-                // Show modal
-                modal.show();
-                $('.log-detail-loading').show();
-                $('.log-detail-content').hide();
-                
-                // Make AJAX request
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'get_log_details',
-                        log_id: logId,
-                        nonce: '<?php echo esc_js(wp_create_nonce('shipping_event_logs')); ?>'
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            var log = response.data;
-                            
-                            // Populate modal
-                            $('#log-detail-id').text(log.id);
-                            $('#log-detail-ip').text(log.ip_address);
-                            $('#log-detail-status').html('<span class="status-' + log.status + '">' + log.status + '</span>');
-                            $('#log-detail-created').text(log.created_at);
-                            $('#log-detail-processed').text(log.processed_at || 'N/A');
-                            
-                            // Format JSON data
-                            $('#log-detail-body').text(log.request_body || 'No data');
-                            
-                            try {
-                                var params = JSON.parse(log.request_params);
-                                $('#log-detail-params').text(JSON.stringify(params, null, 2));
-                            } catch(e) {
-                                $('#log-detail-params').text(log.request_params || 'No data');
-                            }
-                            
-                            try {
-                                var headers = JSON.parse(log.request_headers);
-                                $('#log-detail-headers').text(JSON.stringify(headers, null, 2));
-                            } catch(e) {
-                                $('#log-detail-headers').text(log.request_headers || 'No data');
-                            }
-                            
-                            try {
-                                var responseData = JSON.parse(log.response_data);
-                                $('#log-detail-response').text(JSON.stringify(responseData, null, 2));
-                            } catch(e) {
-                                $('#log-detail-response').text(log.response_data || 'No data');
-                            }
-                            
-                            $('.log-detail-loading').hide();
-                            $('.log-detail-content').show();
-                        } else {
-                            alert('Error: ' + response.data);
-                            modal.hide();
-                        }
-                    },
-                    error: function() {
-                        alert('Failed to load log details');
-                        modal.hide();
-                    }
-                });
-            });
-            
-            // Close modal
-            $('.log-modal-close, .log-modal-overlay').on('click', function() {
-                modal.hide();
-            });
-            
-            // Prevent modal content click from closing
-            $('.log-modal-content').on('click', function(e) {
-                e.stopPropagation();
-            });
-        });
-        </script>
         <?php
     }
     

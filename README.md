@@ -1,17 +1,17 @@
 === Commerce Control Suite ===
 Contributors: kazeemquadri
-Tags: woocommerce, order control, payment gateway, shipping, webhooks
+Tags: woocommerce, order control, payment gateway, shipping, webhooks, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Stable tag: 1.2.7
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Complete control suite for WooCommerce - manage order restrictions, payment gateway rules, and shipping event webhooks.
+Manage WooCommerce order restrictions, payment gateway rules, shipping event webhooks, and advanced currency switching from one dashboard.
 
 == Description ==
 
-Commerce Control Suite is a comprehensive WordPress plugin that gives you complete control over your WooCommerce store operations. Manage order restrictions, payment gateway rules, and shipping event webhooks all from one powerful dashboard.
+Commerce Control Suite is a comprehensive WordPress plugin that gives you complete control over your WooCommerce store operations. Manage order restrictions, payment gateway rules, shipping event webhooks, and advanced currency switching all from one powerful dashboard.
 
 == Features ==
 
@@ -54,16 +54,16 @@ Commerce Control Suite is a comprehensive WordPress plugin that gives you comple
 
 == Installation ==
 
-1. Upload the plugin files to `/wp-content/plugins/woocommerce-control-suite/`
+1. Upload the plugin files to `/wp-content/plugins/commerce-control-suite/`
 2. Activate the plugin through the 'Plugins' menu in WordPress
-3. Navigate to **WC Control Suite** in the WordPress admin menu
+3. Navigate to **Commerce Control Suite** in the WordPress admin menu
 4. Configure your settings in each section
 
 == Configuration ==
 
 ### Order Control Settings
 
-1. Go to **WC Control Suite > Order Control**
+1. Go to **Commerce Control Suite > Order Control**
 2. Enable/disable order placement
 3. Choose restriction type (All Products, Categories, or Specific Products)
 4. Set time restrictions if needed
@@ -73,7 +73,7 @@ Commerce Control Suite is a comprehensive WordPress plugin that gives you comple
 
 ### Payment Gateway Control
 
-1. Go to **WC Control Suite > Payment Gateway**
+1. Go to **Commerce Control Suite > Payment Gateway**
 2. Click **Add New Rule**
 3. Give your rule a name
 4. Select currencies for the rule
@@ -83,7 +83,7 @@ Commerce Control Suite is a comprehensive WordPress plugin that gives you comple
 
 ### Shipping Webhooks
 
-1. Go to **WC Control Suite > Event Logs**
+1. Go to **Commerce Control Suite > Event Logs**
 2. Configure your webhook endpoint slug
 3. Copy the webhook URL
 4. Provide it to your shipping platform
@@ -128,6 +128,7 @@ You can implement additional security by:
 
 ### 1.2.7
 
+- Added advanced currency switching features.
 - Fixed "Trying to access array offset on null" warning on fresh installations.
 - Added strict dependency check for WooCommerce to prevent fatal errors.
 - Improved plugin initialization with admin notices for missing dependencies.
